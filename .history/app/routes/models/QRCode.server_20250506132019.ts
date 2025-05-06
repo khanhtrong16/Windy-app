@@ -1,20 +1,18 @@
 import invariant from "tiny-invariant";
+import db from "../../db.server";
 import qrcode from "qrcode";
-import prisma from "../db.server";
-export async function getQRCode(id, graphql) {
-  console.log("run 1");
+// export async function getQRCode(id, graphql) {
+//   const qrCode = await db.QRCode.findFirst({ where: { id } });
 
-  const qrCode = await prisma.qRCode.findFirst({ where: { id } });
+//   if (!qrCode) {
+//     return null;
+//   }
 
-  if (!qrCode) {
-    return null;
-  }
-
-  return supplementQRCode(qrCode, graphql);
-}
+//   return supplementQRCode(qrCode, graphql);
+// }
 
 export async function getQRCodes(shop, graphql) {
-  const qrCodes = await prisma.qRCode.findMany({
+  const qrCodes = await db.QRCode.findMany({
     where: { shop },
     orderBy: { id: "desc" },
   });
@@ -101,4 +99,3 @@ export function validateQRCode(data) {
     return errors;
   }
 }
-//

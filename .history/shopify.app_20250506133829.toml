@@ -3,7 +3,7 @@
 client_id = "fc6bd5d381b4f7942a570801339fa6b5"
 name = "Windy-app"
 handle = "windy-app-1"
-application_url = "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com"
+application_url = "https://romantic-american-furnished-ds.trycloudflare.com"
 embedded = true
 
 [build]
@@ -27,9 +27,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com/auth/callback",
-  "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com/auth/shopify/callback",
-  "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com/api/auth/callback"
+  "https://romantic-american-furnished-ds.trycloudflare.com/auth/callback",
+  "https://romantic-american-furnished-ds.trycloudflare.com/auth/shopify/callback",
+  "https://romantic-american-furnished-ds.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

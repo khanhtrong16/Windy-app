@@ -13,8 +13,8 @@ import {
   InlineStack,
 } from "@shopify/polaris";
 
-import { AlertDiamondIcon, ImageIcon } from "@shopify/polaris-icons";
 import { getQRCodes } from "../models/QRCode.server";
+import { AlertDiamondIcon, ImageIcon } from "@shopify/polaris-icons";
 
 export async function loader({ request }) {
   const { admin, session } = await authenticate.admin(request);
@@ -100,7 +100,7 @@ const QRTableRow = ({ qrCode }) => (
 );
 
 export default function Index() {
-  const { qrCodes } = useLoaderData<typeof loader>();
+  const { qrCodes } = useLoaderData();
   const navigate = useNavigate();
 
   return (

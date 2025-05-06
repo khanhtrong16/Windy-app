@@ -1,9 +1,7 @@
 import invariant from "tiny-invariant";
 import qrcode from "qrcode";
-import prisma from "../db.server";
+import prisma from "../../db.server";
 export async function getQRCode(id, graphql) {
-  console.log("run 1");
-
   const qrCode = await prisma.qRCode.findFirst({ where: { id } });
 
   if (!qrCode) {
@@ -101,4 +99,3 @@ export function validateQRCode(data) {
     return errors;
   }
 }
-//

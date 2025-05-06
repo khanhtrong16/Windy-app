@@ -101,4 +101,3 @@ export function validateQRCode(data) {
     return errors;
   }
 }
-//

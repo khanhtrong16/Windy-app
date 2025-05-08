@@ -1,98 +1,11 @@
-<!-- Div ban đầu ẩn, sẽ được cập nhật bằng JavaScript -->
+{% assign avg_rating = product.metafields.star.review | plus: 0 %}
+<div>TRung bình mà {{product.metafields.star.count}}</div>
+{% if avg_rating > 0 %}
 <div class="prapp-average-block" style="padding: {{ block.settings.padding_y }}px {{ block.settings.padding_x }}px;" data-product-id="{{ block.settings.product.id }}">
   <h4>{{ "blocks.average-rating.heading" | t }}</h4>
-  <div class="prapp-stars-container" data-rating="0">
-    {% render "star-rating", rating: 0, fill: block.settings.stars_fill_color, size: block.settings.star_size %}
-  </div>
-  <div class="prapp-review-count" style="display: none;">
-    (<span class="total-reviews">0</span> đánh giá)
-  </div>
+  {% render "star-rating", rating: avg_rating, fill: block.settings.stars_fill_color, size: block.settings.star_size %}
 </div>
-
-<script>
-  // Hàm để gọi API và cập nhật hiển thị số sao
-  document.addEventListener('DOMContentLoaded', function() {
-    const averageBlock = document.querySelector('.prapp-average-block');
-    if (averageBlock) {
-      const productId = averageBlock.dataset.productId;
-      const starsContainer = averageBlock.querySelector('.prapp-stars-container');
-      const reviewCountContainer = averageBlock.querySelector('.prapp-review-count');
-      const totalReviewsElement = averageBlock.querySelector('.total-reviews');
-      
-      if (productId) {
-        // Gọi API thông qua App Proxy, thêm timestamp để tránh cache
-        const timestamp = new Date().getTime();
-        fetch(`/apps/reviews?productId=${productId}&_t=${timestamp}`)
-          .then(response => response.json())
-          .then(data => {
-            // Kiểm tra có lỗi không
-            if (data.error) {
-              console.error('Lỗi khi lấy dữ liệu đánh giá:', data.error);
-              return;
-            }
-            
-            // Cập nhật hiển thị số sao
-            if (data.totalReviews > 0) {
-              // Cập nhật rating
-              updateStarRating(data.averageRating);
-              
-              // Hiển thị số lượng đánh giá
-              totalReviewsElement.textContent = data.totalReviews;
-              reviewCountContainer.style.display = 'inline-block';
-            }
-          })
-          .catch(error => {
-            console.error('Lỗi khi gọi API đánh giá:', error);
-          });
-      }
-      
-      // Hàm cập nhật hiển thị sao
-      function updateStarRating(rating) {
-        // Nếu sử dụng CSS tĩnh, chúng ta cần cập nhật thuộc tính data-rating
-        starsContainer.dataset.rating = rating;
-        
-        // Xóa các sao cũ
-        starsContainer.innerHTML = '';
-        
-        // Render lại stars với rating mới
-        const starSize = {{ block.settings.star_size }};
-        const starFillColor = '{{ block.settings.stars_fill_color }}';
-        
-        // Đây là cách đơn giản để tạo stars
-        // Trong thực tế, bạn có thể muốn sao chép mã từ snippet star-rating
-        const starsHTML = renderStars(rating, starFillColor, starSize);
-        starsContainer.innerHTML = starsHTML;
-      }
-      
-      // Hàm render stars
-      function renderStars(rating, fillColor, size) {
-        const fullStarCount = Math.floor(rating);
-        const hasHalfStar = rating - fullStarCount >= 0.5;
-        const emptyStarCount = 5 - fullStarCount - (hasHalfStar ? 1 : 0);
-        
-        let starsHTML = '<div class="prapp-stars">';
-        
-        // Render full stars
-        for (let i = 0; i < fullStarCount; i++) {
-          starsHTML += `<span class="prapp-star" style="color: ${fillColor}; width: ${size}px; height: ${size}px;">★</span>`;
-        }
-        
-        // Render half star if needed
-        if (hasHalfStar) {
-          starsHTML += `<span class="prapp-star" style="color: ${fillColor}; width: ${size}px; height: ${size}px;">★</span>`;
-        }
-        
-        // Render empty stars
-        for (let i = 0; i < emptyStarCount; i++) {
-          starsHTML += `<span class="prapp-star" style="color: #ddd; width: ${size}px; height: ${size}px;">☆</span>`;
-        }
-        
-        starsHTML += '</div>';
-        return starsHTML;
-      }
-    }
-  });
-</script>
+{% endif %}
 
 {% schema %}
 {

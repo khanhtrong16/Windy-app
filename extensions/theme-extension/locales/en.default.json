@@ -1,7 +1,15 @@
 {
   "blocks": {
-		"average-rating": {
-			"heading": "Average Score"
-		}
-	}
+    "average-rating": {
+      "heading": "Average Score"
+    }
+  },
+  "ratings": {
+    "stars": {
+      "label": "Rating"
+    },
+    "home": {
+      "recommendationText": "Recommended by customers"
+    }
+  }
 }

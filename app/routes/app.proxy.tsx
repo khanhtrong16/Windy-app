@@ -1,168 +1,122 @@
-import { ActionFunction, LoaderFunction, json } from "@remix-run/node";
-import prisma from "../db.server";
-import shopify from "../shopify.server";
-
-/**
- * Loader function xử lý GET request để lấy danh sách đánh giá
- */
-export const loader: LoaderFunction = async ({ request }) => {
-  // Lấy URL và parse các tham số
-  const url = new URL(request.url);
-  console.log("Request URL:", request.url);
-
-  // Trong môi trường App Proxy của Shopify, URL có dạng:
-  // /api/auth/proxy?shop=xxx&path_prefix=%2Fapps%2Freviews&...
-  const shopParam = url.searchParams.get("shop");
-  const pathPrefix = url.searchParams.get("path_prefix");
-  const productId = url.searchParams.get("productId");
-
-  // Log các tham số để debug
-  console.log("Shop:", shopParam);
-  console.log("Path Prefix:", pathPrefix);
-  console.log("Product ID:", productId);
-
-  // Kiểm tra xem đây có phải là App Proxy request không
-  if (pathPrefix && pathPrefix.includes("/apps/reviews")) {
-    // Xử lý request lấy danh sách đánh giá
-    if (productId) {
-      try {
-        // Lấy tất cả đánh giá của sản phẩm này
-        const productReviews = await prisma.reviews.findMany({
-          where: {
-            productId,
-          },
-        });
-
-        console.log(
-          `Tìm thấy ${productReviews.length} đánh giá cho sản phẩm ${productId}`,
-        );
-
-        // Tính trung bình đánh giá
-        const totalRating = productReviews.reduce(
-          (sum, review) => sum + review.rating,
-          0,
-        );
-        const averageRating =
-          productReviews.length > 0 ? totalRating / productReviews.length : 0;
-
-        // Trả về dữ liệu đánh giá
-        return json(
-          {
-            productId,
-            averageRating: parseFloat(averageRating.toFixed(1)),
-            totalReviews: productReviews.length,
-            reviews: productReviews.map((review) => ({
-              id: review.id,
-              rating: review.rating,
-              author: review.author,
-              body: review.body,
-              createdAt: review.createdAt,
-              title: "", // Trường title không có trong DB, nhưng cần cho hiển thị
-              productName: (review as any).productName,
-            })),
-            timestamp: new Date().toISOString(), // Thêm timestamp để debug
-          },
-          {
-            headers: {
-              // Các header cần thiết cho CORS và vô hiệu hóa cache
-              "Access-Control-Allow-Origin": "*",
-              "Cache-Control": "no-store, max-age=0, must-revalidate",
-              Pragma: "no-cache",
-              Expires: "0",
-            },
-          },
-        );
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu đánh giá:", error);
-        return json({ error: "Lỗi khi lấy dữ liệu đánh giá" }, { status: 500 });
-      }
-    } else {
-      // Nếu không có productId
-      return json({ error: "Thiếu productId" }, { status: 400 });
-    }
-  }
-
-  // Trả về thông tin mặc định nếu không phải App Proxy request
-  return json({
-    message: "Endpoint App Proxy cho đánh giá sản phẩm",
-    info: "Vui lòng thêm tham số productId để lấy đánh giá",
-  });
-};
+import { ActionFunction, json } from "@remix-run/node";
+import { authenticate } from "app/shopify.server";
 
 /**
  * Action function xử lý POST request để thêm đánh giá
  */
 export const action: ActionFunction = async ({ request }) => {
-  const formData = await request.formData();
-  const rating = parseInt(formData.get("rating") as string);
-  const author = formData.get("author") as string;
-  const email = formData.get("email") as string;
-  const title = formData.get("title") as string;
-  const body = formData.get("body") as string;
-  const productId = formData.get("product_id") as string;
-  const productName =
-    (formData.get("product_name") as string) || "Unknown Product";
-
-  console.log("Review Data:", {
-    productId,
-    rating,
-    author,
-    email,
-    title,
-    body,
-    productName,
-  });
-
-  // Lưu đánh giá vào cơ sở dữ liệu
+  console.log("test action authenticate.");
   try {
-    // Lưu đánh giá vào Prisma - phải có trường productName vì nó bắt buộc trong DB
-    console.log("Đang lưu đánh giá mới vào DB với productId:", productId);
-    const newReview = await prisma.reviews.create({
-      data: {
-        productId,
-        rating,
-        author,
-        email,
-        body,
-        productName,
-      },
-    });
-    console.log("Đã lưu đánh giá thành công với ID:", newReview.id);
-    console.log("Đang tìm tất cả đánh giá của sản phẩm:", productId);
+    const { admin } = await authenticate.public.appProxy(request);
 
-    // Lấy tất cả đánh giá của sản phẩm này
-    const productReviews = await prisma.reviews.findMany({
-      where: {
-        productId,
-      },
-    });
-    console.log(
-      `Tìm thấy ${productReviews.length} đánh giá cho sản phẩm ${productId}`,
-    );
+    if (!admin) {
+      throw new Error("Không thể xác thực với Shopify Admin API");
+    }
 
-    // Tính trung bình đánh giá
-    const totalRating = productReviews.reduce(
+    const formData = await request.formData();
+    const rating = parseInt(formData.get("rating") as string);
+    const author = formData.get("author") as string;
+    const email = formData.get("email") as string;
+    const title = formData.get("title") as string;
+    const body = formData.get("body") as string;
+    const productId = formData.get("product_id") as string;
+    const productName =
+      (formData.get("product_name") as string) || "Unknown Product";
+    console.log("test login.");
+
+    console.log("Review Data:", {
+      productId,
+      rating,
+      author,
+      email,
+      title,
+      body,
+      productName,
+    });
+
+    // Lưu đánh giá vào cơ sở dữ liệu
+    console.log("test graphql");
+
+    // 1. Lấy metafield hiện tại (nếu có)
+    const existingMetafieldRes = await admin.graphql(`
+    query {
+      product(id: "gid://shopify/Product/${productId}") {
+        reviewsField: metafield(namespace: "star", key: "reviews") {
+          id
+          value
+        }
+        ratingField: metafield(namespace: "star", key: "review") {
+          id
+          value
+        }
+      }
+    }
+    `);
+
+    const responseJson = await existingMetafieldRes.json();
+    console.log("Response data:", responseJson?.data);
+
+    // Lấy reviews từ metafield star.reviews
+    let existingReviews = [];
+    try {
+      const reviewsValue = responseJson?.data?.product?.reviewsField?.value;
+      if (reviewsValue) {
+        existingReviews = JSON.parse(reviewsValue);
+        console.log("Đã tìm thấy", existingReviews.length, "đánh giá hiện có");
+      } else {
+        console.log("Chưa có metafield reviews, tạo mới");
+      }
+    } catch (e) {
+      console.error("Lỗi khi parse dữ liệu reviews:", e);
+    }
+
+    // Lấy rating hiện tại nếu có
+    let currentRating = 0;
+    try {
+      const ratingValue = responseJson?.data?.product?.ratingField?.value;
+      if (ratingValue) {
+        currentRating = parseFloat(ratingValue);
+        console.log("Rating hiện tại:", currentRating);
+      }
+    } catch (e) {
+      console.error("Lỗi khi parse rating:", e);
+    }
+
+    // 2. Thêm review mới vào mảng
+    const newReview = {
+      id: Date.now().toString(),
+      rating,
+      author,
+      email,
+      title,
+      body,
+      productName,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Thêm review mới vào đầu danh sách để hiển thị mới nhất trước
+    const updatedReviews = [newReview, ...existingReviews];
+
+    // Giới hạn số lượng reviews để tránh vượt quá kích thước tối đa của metafield
+    const limitedReviews = updatedReviews.slice(0, 50);
+
+    // Tính toán rating trung bình từ tất cả các đánh giá
+    const totalRating = limitedReviews.reduce(
       (sum, review) => sum + review.rating,
       0,
     );
     const averageRating =
-      productReviews.length > 0 ? totalRating / productReviews.length : 0;
-    console.log("cập nhật metafield cho đánh giá trung bình");
+      limitedReviews.length > 0 ? totalRating / limitedReviews.length : 0;
 
-    try {
-      // Cập nhật metafield của sản phẩm - đặt trong khối try/catch riêng
-      console.log("test trước khi lấy admin");
-      const { admin } = await shopify.authenticate.admin(request);
-      console.log("lấy admin");
-      // Cập nhật metafield cho đánh giá trung bình
-      await admin.graphql(
-        `
-        mutation updateProductMetafield($input: MetafieldsSetInput!) {
-          metafieldsSet(metafields: $input) {
-            metafields {
-              key
-              namespace
-              value
+    // 3. Lưu lại cả reviews và rating trung bình
+    const response = await admin.graphql(
+      `#graphql
+        mutation productMetafieldSet($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields { 
+              namespace 
+              key 
+              value 
             }
             userErrors {
               field
@@ -171,87 +125,66 @@ export const action: ActionFunction = async ({ request }) => {
           }
         }
       `,
-        {
-          variables: {
-            input: {
+      {
+        variables: {
+          metafields: [
+            {
               ownerId: `gid://shopify/Product/${productId}`,
-              metafields: [
-                {
-                  namespace: "reviews",
-                  key: "rating",
-                  value: JSON.stringify({ rating: averageRating.toFixed(1) }),
-                  type: "json",
-                },
-              ],
+              namespace: "star",
+              key: "review",
+              value: averageRating.toFixed(1),
+              type: "number_decimal",
             },
-          },
+            {
+              ownerId: `gid://shopify/Product/${productId}`,
+              namespace: "star",
+              key: "count",
+              value: limitedReviews.length.toString(),
+              type: "number_integer",
+            },
+            {
+              ownerId: `gid://shopify/Product/${productId}`,
+              namespace: "star",
+              key: "reviews",
+              value: JSON.stringify(limitedReviews),
+              type: "json",
+            },
+          ],
         },
-      );
-      console.log("cập nhật metafield cho danh sách đánh giá");
-      // Cập nhật metafield cho danh sách đánh giá
-      const reviewsData = productReviews.map((review) => ({
-        id: review.id,
-        rating: review.rating,
-        name: review.author,
-        email: review.email,
-        title: title,
-        body: review.body,
-        created_at: review.createdAt,
-      }));
+      },
+    );
 
-      await admin.graphql(
-        `
-        mutation updateProductReviewsMetafield($input: MetafieldsSetInput!) {
-          metafieldsSet(metafields: $input) {
-            metafields {
-              key
-              namespace
-              value
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `,
-        {
-          variables: {
-            input: {
-              ownerId: `gid://shopify/Product/${productId}`,
-              metafields: [
-                {
-                  namespace: "prapp-pub",
-                  key: "reviews",
-                  value: JSON.stringify(reviewsData),
-                  type: "json",
-                },
-              ],
-            },
-          },
-        },
+    const mutationResponse = await response.json();
+    console.log("response", mutationResponse);
+
+    if (mutationResponse.data.metafieldsSet.userErrors.length > 0) {
+      console.error(
+        "Lỗi GraphQL:",
+        mutationResponse.data.metafieldsSet.userErrors,
       );
-    } catch (authError) {
-      console.error("Lỗi xác thực Shopify API:", authError);
-      // Vẫn trả về thành công vì review đã được lưu vào DB
-      return json({
-        success: true,
-        message:
-          "Đánh giá đã được lưu nhưng chưa cập nhật được lên cửa hàng. Vui lòng đăng nhập lại để đồng bộ dữ liệu.",
-        auth_error: true,
-      });
+      return json(
+        {
+          success: false,
+          message: "Có lỗi xảy ra khi lưu đánh giá.",
+          errors: mutationResponse.data.metafieldsSet.userErrors,
+        },
+        { status: 500 },
+      );
     }
 
-    return json({ success: true, message: "Đánh giá đã được gửi thành công" });
-  } catch (dbError) {
-    console.error("Lỗi truy vấn DB:", dbError);
-    // Vẫn trả về thành công vì review đã được lưu vào DB
+    return json({
+      success: true,
+      message: "Đánh giá đã được gửi thành công",
+      averageRating: parseFloat(averageRating.toFixed(1)),
+      reviewCount: limitedReviews.length,
+    });
+  } catch (error) {
+    console.error("Lỗi truy vấn DB:", error);
     return json(
       {
         success: false,
-        message:
-          "Có lỗi xảy ra khi lưu đánh giá hoặc tính toán xếp hạng trung bình.",
-        db_error: true,
+        message: "Có lỗi xảy ra khi lưu đánh giá.",
+        error: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     );

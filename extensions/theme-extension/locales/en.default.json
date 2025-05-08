@@ -1,10 +1,7 @@
 {
-  "ratings": {
-    "stars": {
-      "label": "Ratings...."
-    },
-    "home": {
-      "recommendationText": "Recommended Product!"
-    }
-  }
+  "blocks": {
+		"average-rating": {
+			"heading": "Average Score"
+		}
+	}
 }

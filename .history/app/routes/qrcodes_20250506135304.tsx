@@ -1,2 +1,0 @@
-shopify logout
-shopify login

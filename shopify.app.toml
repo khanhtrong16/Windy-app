@@ -3,7 +3,7 @@
 client_id = "fc6bd5d381b4f7942a570801339fa6b5"
 name = "Windy-app"
 handle = "windy-app-1"
-application_url = "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com"
+application_url = "https://nw-worst-cat-cart.trycloudflare.com"
 embedded = true
 
 [build]
@@ -23,14 +23,19 @@ api_version = "2025-04"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_products,write_app_proxy"
 
 [auth]
 redirect_urls = [
-  "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com/auth/callback",
-  "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com/auth/shopify/callback",
-  "https://codes-synopsis-restrictions-lifestyle.trycloudflare.com/api/auth/callback"
+  "https://nw-worst-cat-cart.trycloudflare.com/auth/callback",
+  "https://nw-worst-cat-cart.trycloudflare.com/auth/shopify/callback",
+  "https://nw-worst-cat-cart.trycloudflare.com/api/auth/callback"
 ]
+
+[app_proxy]
+url = "https://nw-worst-cat-cart.trycloudflare.com/app/proxy"
+subpath = "reviews"
+prefix = "apps"
 
 [pos]
 embedded = true
